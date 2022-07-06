@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/stairs",
+  "textures": {
+	"bottom": "techreborn:block/storage/annealed_copper_hot_block",
+	"top": "techreborn:block/storage/annealed_copper_hot_block",
+	"side": "techreborn:block/storage/annealed_copper_hot_block"
+  }
+}

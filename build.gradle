@@ -1,0 +1,442 @@
+import net.fabricmc.loom.task.RemapJarTask
+import net.fabricmc.loom.task.RunClientTask
+
+plugins {
+  id 'maven-publish'
+  id 'com.diffplug.spotless' version '5.1.0' apply false
+  id 'fabric-loom' version '0.6-SNAPSHOT'
+  id 'com.matthewprenger.cursegradle' version '1.4.0'
+  id("net.corda.plugins.jar-filter") version("5.0.8") apply false
+}
+
+apply from: 'dependencies.gradle'
+
+allprojects {
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xmaxerrs" << "4096"
+        }
+    }
+
+    apply plugin: 'maven-publish'
+    apply plugin: 'fabric-loom'
+    apply plugin: 'com.diffplug.spotless'
+    apply plugin: 'com.matthewprenger.cursegradle'
+    apply plugin: 'net.corda.plugins.jar-filter'
+
+    archivesBaseName = project.mod_name
+    group = rootProject.mod_group
+    version = rootProject.mod_version + "+" + project.version_meta
+
+    ext {
+        shouldGenerateData = false
+        isRunningGenerateDataTask = path == ":reborncore-datagen-initializer"
+    }
+
+    loom {
+        shareCaches = true
+    }
+
+    spotless {
+        encoding 'UTF-8'
+        enforceCheck(false)
+
+        java {
+            licenseHeaderFile(rootProject.file('HEADER'))
+            removeUnusedImports()
+            eclipse().configFile(rootProject.file('spotless/formatter-settings.xml'))
+        }
+    }
+
+    java {
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
+
+    repositories {
+        maven {
+            name = "JitPack"
+            url = "https://jitpack.io"
+            content {
+                includeGroupByRegex "com.github.\\w+"
+            }
+        }
+        maven {
+            name = "BuildCraft"
+            url = "https://mod-buildcraft.com/maven"
+            content {
+                includeGroup "alexiil.mc.lib"
+            }
+        }
+        maven {
+            name = 'Ladysnake Mods'
+            url = 'https://ladysnake.jfrog.io/artifactory/mods'
+            content {
+                includeGroup "io.github.onyxstudios.Cardinal-Components-API"
+            }
+        }
+        maven {
+            name = "shedaniel"
+            url = "https://maven.shedaniel.me"
+        }
+        maven {
+            name = "Earthcomputer"
+            url = "https://dl.bintray.com/earthcomputer/mods"
+            content {
+                includeGroup "net.earthcomputer"
+            }
+        }
+        maven {
+            name = "BlameJared"
+            url = "https://maven.blamejared.com"
+            content {
+                includeGroup "vazkii.patchouli"
+            }
+        }
+        maven {
+            name = "dblsaiko"
+            url = "https://maven.dblsaiko.net/"
+        }
+        maven {
+            name = "terraformersmc"
+            url = "https://maven.terraformersmc.com/releases/"
+        }
+    }
+
+    dependencies {
+        dependencies.ext.useAsApiOptionally = { dep ->
+            modApi(dep) {
+                if (!dep.contains("net.fabricmc.fabric-api")) {
+                    exclude group: "net.fabricmc.fabric-api"
+                }
+                exclude group: "net.fabricmc"
+                if (!dep.contains("me.shedaniel")) {
+                    exclude group: "me.shedaniel"
+                }
+            }
+        }
+        dependencies.ext.useAsApi = { dep ->
+            useAsApiOptionally(dep)
+            if (project.name == "reborncore")
+                include(dep)
+        }
+        dependencies.ext.useAsRuntime = { dep ->
+            modRuntime(dep) {
+                if (!dep.contains("net.fabricmc.fabric-api")) {
+                    exclude group: "net.fabricmc.fabric-api"
+                }
+                exclude group: "net.fabricmc"
+                if (!dep.contains("me.shedaniel")) {
+                    exclude group: "me.shedaniel"
+                }
+            }
+        }
+
+        minecraft group: 'com.mojang', name: 'minecraft', version: minecraft_version
+        mappings group: 'net.fabricmc', name: 'yarn', version: mappings_version, classifier: 'v2'
+        modImplementation "net.fabricmc:fabric-loader:$loader_version"
+        useAsApiOptionally "net.fabricmc.fabric-api:fabric-api:$api_version"
+        modImplementation "com.google.code.findbugs:jsr305:3.0.2"
+
+        tap(rootProject.ext.setDefaultApis)
+        annotationProcessor "net.fabricmc:fabric-mixin-compile-extensions:0.4.6"
+    }
+
+    afterEvaluate {
+        processResources {
+            filesMatching('fabric.mod.json') {
+                expand 'version': project.version
+            }
+            inputs.property "version", project.version
+        }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.encoding = "UTF-8"
+    }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier("sources")
+        from sourceSets.main.allSource
+    }
+}
+
+subprojects {
+    archivesBaseName = project.name
+
+    ext {
+        cfProjectId = -1
+    }
+
+    task remapMavenJar(type: Copy, dependsOn: remapJar) {
+        afterEvaluate {
+            from("${project.buildDir}/libs/$archivesBaseName-${version}.jar")
+            into("${project.buildDir}/libs/")
+            rename { String fn -> "$archivesBaseName-${version}-maven.jar" }
+        }
+    }
+
+    configurations {
+        dev
+        remapped
+    }
+
+    jar {
+        classifier("dev")
+    }
+
+    remapJar {
+        input.set(file("${project.buildDir}/filtered-libs/$archivesBaseName-${version}-dev-filtered.jar"))
+        classifier(null)
+    }
+
+    artifacts {
+        dev file: file("${project.buildDir}/libs/$archivesBaseName-${version}-dev.jar"), type: "jar", builtBy: jar
+        remapped file: file("${project.buildDir}/libs/$archivesBaseName-${version}.jar"), type: "jar", builtBy: remapJar
+    }
+
+    task jarFilter(type: net.corda.gradle.jarfilter.JarFilterTask) {
+        jars jar
+        annotations {
+            forRemove = [
+                    "org.jetbrains.annotations.NotNull",
+                    "org.jetbrains.annotations.Nullable",
+                    "org.jetbrains.annotations.ApiStatus\$Experimental",
+                    "org.jetbrains.annotations.ApiStatus\$Internal",
+                    "org.jetbrains.annotations.ApiStatus\$ScheduledForRemoval",
+                    "org.jetbrains.annotations.ApiStatus\$AvailableSince",
+                    "org.jetbrains.annotations.ApiStatus\$NonExtendable",
+                    "org.jetbrains.annotations.ApiStatus\$OverrideOnly"
+            ]
+        }
+    }
+
+    remapJar.dependsOn("jarFilter")
+
+    afterEvaluate {
+        if (shouldGenerateData) {
+            sourceSets {
+                main {
+                    resources {
+                        srcDir 'src/generated/resources'
+                    }
+                }
+                datagen {
+                    compileClasspath += main.compileClasspath
+                    runtimeClasspath += main.runtimeClasspath
+                }
+            }
+
+            task datagenJar(type: Jar) {
+                classifier("datagen")
+                from sourceSets.datagen.output
+            }
+
+            configurations {
+                datagenDev
+                datagenCompile.extendsFrom(compileClasspath)
+            }
+
+            dependencies {
+                datagenCompile sourceSets.main.output
+            }
+
+            artifacts {
+                datagenDev file: file("${project.buildDir}/libs/$archivesBaseName-${version}-datagen.jar"), type: 'jar', builtBy: datagenJar
+            }
+
+            if (isRunningGenerateDataTask) {
+                task generateData(type: RunClientTask, dependsOn: downloadAssets) {
+                    classpath = configurations.runtimeClasspath
+                    classpath sourceSets.datagen.runtimeClasspath
+                    classpath sourceSets.main.output
+                    classpath sourceSets.datagen.output
+                }
+            }
+        }
+
+        curseforge {
+            if ((project.hasProperty('curse_api_key') || System.getenv('curse_api_key') != null) && cfProjectId >= 0) {
+                project {
+                    id = cfProjectId.toString()
+                    releaseType = rootProject.release_cycle
+                    changelog = ""
+                    ((String) rootProject.tagged_versions).split(",").each {
+                        addGameVersion it
+                    }
+                    relations {
+                        requiredDependency "fabric-api"
+                        embeddedLibrary "cloth-api"
+                        embeddedLibrary "cloth-config"
+                        embeddedLibrary "auto-config-updated-api"
+                        embeddedLibrary "cardinal-components"
+                        embeddedLibrary "libblockattributes"
+                        embeddedLibrary "patchouli-fabric"
+                    }
+                    mainArtifact(file("${project.buildDir}/libs/${project.archivesBaseName}-${project.version}.jar"))
+                }
+            }
+            options {
+                forgeGradleIntegration = false
+                javaVersionAutoDetect = false
+            }
+        }
+    }
+
+    publishing {
+        publications {
+            create("${archivesBaseName}_mavenJava", MavenPublication) {
+                afterEvaluate {
+                    artifact(file("${project.buildDir}/libs/$archivesBaseName-${version}-maven.jar")) {
+                        builtBy remapMavenJar
+                    }
+                    artifact(sourcesJar) {
+                        builtBy remapSourcesJar
+                    }
+                }
+            }
+        }
+    }
+
+    task copyBuiltToMain(type: Copy) {
+        from "${project.buildDir}/libs/"
+        into "${rootProject.buildDir}/libs/"
+        include "*.jar"
+    }
+    build.finalizedBy(copyBuiltToMain)
+}
+
+task generateDataAll
+subprojects.forEach {
+    if (it.isRunningGenerateDataTask) {
+        generateDataAll.dependsOn("${it.path}:generateData")
+    }
+}
+
+task deleteBuildFolderAll {
+    doLast {
+        allprojects {
+            delete it.buildDir
+            mkdir "${it.buildDir}/libs"
+        }
+    }
+}
+build.mustRunAfter(deleteBuildFolderAll)
+
+task releaseOnCf
+releaseOnCf.dependsOn(":curseforge")
+subprojects { releaseOnCf.dependsOn("${it.path}:curseforge") }
+subprojects { rootProject.remapJar.dependsOn("${it.path}:remapJar") }
+subprojects { rootProject.spotlessApply.dependsOn("${it.path}:spotlessApply") }
+
+task remapMavenJar(type: RemapJarTask, dependsOn: jar) {
+    afterEvaluate {
+        input.set(file("${project.buildDir}/libs/${archivesBaseName}-${version}-dev.jar"))
+        archiveName = "${archivesBaseName}-${version}-maven.jar"
+        addNestedDependencies.set(false)
+    }
+}
+
+sourceSets {
+    datagen
+}
+
+dependencies {
+    afterEvaluate {
+        subprojects.each {
+            compile project(path: ":${it.path}", configuration: "dev")
+            if (!it.isRunningGenerateDataTask) {
+                include project(path: ":${it.path}", configuration: "remapped")
+            }
+        }
+    }
+
+    modRuntime "net.fabricmc:dev-launch-injector:+"
+    tap(rootProject.ext.setRuntimeTestMods)
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifact(file("${project.buildDir}/libs/$archivesBaseName-${project.version}-maven.jar")) {
+                builtBy remapMavenJar
+            }
+            artifact(sourcesJar) {
+                builtBy remapSourcesJar
+            }
+            pom.withXml {
+                def depsNode = asNode().appendNode("dependencies")
+                subprojects.each {
+                    if (!it.isRunningGenerateDataTask) {
+                        def depNode = depsNode.appendNode("dependency")
+                        depNode.appendNode("groupId", it.group)
+                        depNode.appendNode("artifactId", it.name)
+                        depNode.appendNode("version", it.version)
+                        depNode.appendNode("scope", "compile")
+                    }
+                }
+            }
+        }
+    }
+}
+
+curseforge {
+    if (project.hasProperty('curse_api_key') || System.getenv('curse_api_key') != null) {
+        apiKey = project.hasProperty('curse_api_key') ? project.property('curse_api_key') : System.getenv('curse_api_key')
+        project {
+            id = "0"
+            releaseType = rootProject.release_cycle
+            changelog = ""
+            ((String) rootProject.tagged_versions).split(",").each {
+                addGameVersion it
+            }
+            relations {
+                requiredDependency "fabric-api"
+                embeddedLibrary "cloth-api"
+                embeddedLibrary "cloth-config"
+                embeddedLibrary "auto-config-updated-api"
+                embeddedLibrary "cardinal-components"
+                embeddedLibrary "libblockattributes"
+                embeddedLibrary "patchouli-fabric"
+            }
+            mainArtifact(file("${project.buildDir}/libs/${project.archivesBaseName}-${project.version}.jar"))
+        }
+    }
+    options {
+        forgeGradleIntegration = false
+        javaVersionAutoDetect = false
+    }
+}
+
+import groovy.json.JsonSlurper
+import groovy.json.JsonOutput
+
+task compileRecipes {
+    description "Generate recipe JSON for similar recipes"
+    def jsonSlurper = new JsonSlurper()
+    def recipePath = "build/resources/main/data/techreborn/recipes"
+
+    def smeltingPath = recipePath + "/smelting"
+    def blastingPath = recipePath + "/blasting"
+
+    doLast {
+        // Add any recipe filenames that don't match the regex here
+        String[] whitelist = []
+        def pattern = ~'^\\w+_(ingot)\\w*\\.json$'
+
+        file(smeltingPath).eachFileRecurse(groovy.io.FileType.FILES) {
+            if (whitelist.contains(it.name) || it.name ==~ pattern) {
+                def recipe = jsonSlurper.parseText(it.text)
+
+                // Final failsafe
+                if (["smelting", "minecraft:smelting"].contains(recipe.type)) {
+                    recipe.type = "minecraft:blasting"
+                    recipe.cookingtime = recipe.cookingtime / 2
+
+                    File output = file(new File(blastingPath, it.name))
+                    output.write(JsonOutput.prettyPrint(JsonOutput.toJson(recipe)))
+                }
+            }
+        }
+    }
+}

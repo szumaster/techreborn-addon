@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:item/generated",
+    "textures": {
+        "layer0": "techreborn:item/doubleingot/iridium_alloy_double_ingot"
+    }
+}

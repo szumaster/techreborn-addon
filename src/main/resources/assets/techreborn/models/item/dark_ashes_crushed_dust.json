@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:item/generated",
+    "textures": {
+        "layer0": "techreborn:item/crusheddust/dark_ashes_crushed_dust"
+    }
+}

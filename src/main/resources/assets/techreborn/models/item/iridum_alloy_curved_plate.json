@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:item/generated",
+    "textures": {
+        "layer0": "techreborn:item/curvedplate/iridum_alloy_curved_plate"
+    }
+}

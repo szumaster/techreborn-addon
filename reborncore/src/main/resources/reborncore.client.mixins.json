@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "reborncore.mixin.client",
+  "compatibilityLevel": "JAVA_8",
+  "client": [
+    "MixinGameRenderer",
+    "MixinItemRenderer",
+    "MixinDebugRenderer",
+	"MixinWorldRenderer",
+	"AccessorModelPredicateProviderRegistry",
+	"AccessorChatHud"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

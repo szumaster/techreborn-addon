@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "techreborn.mixins",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [],
+  "client": [
+	"ClientPlayerInteractionManagerMixin",
+	"HeldItemRendererMixin"
+  ],
+  "server": [],
+  "injectors": {
+	"defaultRequire": 1
+  }
+}

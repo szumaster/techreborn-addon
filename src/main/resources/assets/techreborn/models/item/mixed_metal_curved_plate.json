@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:item/generated",
+    "textures": {
+        "layer0": "techreborn:item/curvedplate/mixed_metal_curved_plate"
+    }
+}

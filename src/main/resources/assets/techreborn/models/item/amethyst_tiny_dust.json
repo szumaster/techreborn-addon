@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+	"layer0": "techreborn:item/smalldust/amethyst_tiny_dust"
+  }
+}

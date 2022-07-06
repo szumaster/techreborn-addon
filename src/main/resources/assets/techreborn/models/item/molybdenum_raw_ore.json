@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/cube_all",
+  "textures": {
+	"layer0": "techreborn:item/rawore/molybdenum_raw_ore"
+  }
+}

@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:item/generated",
+    "textures": {
+        "layer0": "techreborn:item/curvedplate/yellow_garnet_curved_plate"
+    }
+}

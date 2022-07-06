@@ -1,0 +1,6 @@
+shouldGenerateData = true
+cfProjectId = 00
+
+loom {
+    accessWidener = file("src/main/resources/reborncore.accesswidener")
+}

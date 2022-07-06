@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+	"bottom": "techreborn:block/storage/unicorn_block",
+	"top": "techreborn:block/storage/unicorn_block",
+	"side": "techreborn:block/storage/unicorn_block"
+  }
+}

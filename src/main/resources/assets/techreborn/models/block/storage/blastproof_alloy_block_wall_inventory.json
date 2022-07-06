@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/wall_inventory",
+  "textures": {
+	"wall": "techreborn:block/storage/blastproof_alloy_block"
+  }
+}

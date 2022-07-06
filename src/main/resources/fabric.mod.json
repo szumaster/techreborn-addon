@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "id": "techreborn",
+  "version": "${version}",
+  "name": "Tech Reborn",
+  "icon": "assets/techreborn/icon.png",
+  "description": "A completely standalone tech mod including tools and machines to gather resources, process materials, and progress through the mod.",
+  "license": "MIT",
+  "contact": {
+	"homepage": "https://www.curseforge.com/minecraft/mc-mods/techreborn",
+	"sources": "https://github.com/TechReborn/TechReborn",
+	"issues": "https://github.com/TechReborn/TechReborn/issues"
+  },
+  "environment": "*",
+  "entrypoints": {
+	"main": [
+	  "techreborn.TechReborn"
+	],
+	"client": [
+	  "techreborn.TechRebornClient"
+	],
+	"rei_plugins_v0": [
+	  "techreborn.compat.rei.ReiPlugin"
+	],
+	"autoswitch": [
+	  "techreborn.compat.autoswitch.AutoSwitchApiImpl"
+	]
+  },
+  "depends": {
+	"fabricloader": ">=0.10.8",
+	"fabric": ">=0.28.3",
+	"reborncore": "*",
+	"team_reborn_energy": ">=0.1.1",
+	"fabric-biome-api-v1": ">=3.0.0"
+  },
+  "mixins": [
+	"techreborn.mixins.json"
+  ],
+  "authors": [
+	"Team Reborn",
+	"modmuss50",
+	"drcrazy"
+  ],
+  "contributors": [
+	"Gigabit101",
+	"TheMattaBase",
+	"Mj11jM",
+	"Mazdallier",
+	"tntrololol",
+	"joflashstudios",
+	"lclc98",
+	"Lordmau5",
+	"mezz",
+	"Prospector",
+	"Rushmead",
+	"Yulife",
+	"Dragon2488",
+	"MrBretze",
+	"Ourten",
+	"Dimmerworld",
+	"coderbot",
+	"estebes"
+  ]
+}
